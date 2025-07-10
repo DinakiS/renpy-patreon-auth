@@ -18,7 +18,7 @@ init python:
 
             client = PatreonClient(tokens["access_token"])
 
-            user = client.get_user_data({"fields[user]": "full_name,image_url", "include": "memberships.currently_entitled_tiers", "fields[member]": "patron_status,currently_entitled_amount_cents"})
+            user = client.get_user_data({"fields[user]": "full_name,image_url", "fields[tier]": "title,amount_cents", "include": "memberships.currently_entitled_tiers"})
             persistent.PATREON_USER_DATA = user
 
             renpy.restart_interaction()
