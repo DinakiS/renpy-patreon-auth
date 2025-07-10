@@ -1,0 +1,10 @@
+*.rpyc
+*.rpymc
+.vscode
+errors.txt
+traceback.txt
+log.txt
+*.zip
+*.rpyb
+game/cache/*
+game/saves/*
