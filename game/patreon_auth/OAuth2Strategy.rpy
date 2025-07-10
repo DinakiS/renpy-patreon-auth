@@ -1,6 +1,6 @@
 init python in auth:
-    from urllib.parse import urlencode, urlparse, parse_qs
-    from urllib.request import urlopen, Request
+    from urllib.parse import urlparse, parse_qs
+    import requests
     import ssl
     import certifi
 
@@ -31,10 +31,10 @@ init python in auth:
                 scope=self.scope,
                 redirect_uri=self.redirect_uri,
             )
-        
+
         @property
         def redirect_uri(self):
-            return "http://localhost:" + str(webserver.PORT) + self.callback_url
+            return "http://127.0.0.1:" + str(webserver.PORT) + self.callback_url
 
         def handle_auth(self, request):
             parsed_path = urlparse(request.path)
@@ -68,19 +68,17 @@ init python in auth:
                 self.on_success_callback(tokens)
 
         def get_tokens(self, code):
-            ctx = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH, cafile=certifi.where())
+            headers = {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            }
 
-            data = urlencode({
+            data = {
                 "grant_type": "authorization_code",
                 "code": code,
                 "client_id": self.client_id,
-                "redirect_uri": self.redirect_uri,
-            }).encode("utf-8")
-            headers = {"Content-Type": "application/x-www-form-urlencoded"}
-            req = Request(self.token_url, data=data, headers=headers, method="POST")
-
-            response = urlopen(req, context=ctx)
-
-            data = response.read().decode("utf-8")
-            data = json.loads(data)
-            return data
+                "redirect_uri": self.redirect_uri
+            }
+            response = requests.post(self.token_url, data=data, headers=headers, timeout=10)
+            tokens = response.json()
+            return tokens

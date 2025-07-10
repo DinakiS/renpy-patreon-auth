@@ -1,9 +1,7 @@
 init python:
+    import requests
     from urllib.parse import urlencode
-    from urllib.request import urlopen, Request
     import json
-    import ssl
-    import certifi
 
     class PatreonClient:
         def __init__(self, access_token):
@@ -12,7 +10,8 @@ init python:
         @property
         def headers(self):
             return {
-                "Authorization": "Bearer " + self.access_token
+                "Authorization": f"Bearer {self.access_token}",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
             }
 
         @property
@@ -21,15 +20,14 @@ init python:
 
         def get_user_data(self, query_params):
             query = urlencode(query_params)
-            url = self.base_url + "/identity?{query}".format(query=query)
-            req = Request(url, headers=self.headers)
+            url = f"{self.base_url}/identity?{query}"
+            return self.do_request(url)
 
-            return self.do_request(req)
-
-        def do_request(self, request):
-            ctx = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH, cafile=certifi.where())
-
-            response = urlopen(request, context=ctx)
-            data = response.read().decode("utf-8")
-            data = json.loads(data)
-            return data
+        def do_request(self, url):
+            try:
+                response = requests.get(url, headers=self.headers, timeout=10)
+                response.raise_for_status()
+                return response.json()
+            except requests.exceptions.RequestException as e:
+                print("Patreon request error:", str(e))
+                raise

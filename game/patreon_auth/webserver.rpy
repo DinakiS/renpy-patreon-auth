@@ -5,26 +5,27 @@ init python in webserver:
 
     import http.server
     import threading
-
-    strategy = None
+    from functools import partial
 
     class WebHandler(http.server.BaseHTTPRequestHandler):
-        def do_GET(self):
-            global strategy
+        def __init__(self, *args, strategy=None, **kwargs):
+            self.strategy = strategy
+            super().__init__(*args, **kwargs)
 
-            if self.path.startswith(strategy.callback_url):
-                strategy.handle_auth(self)
+        def do_GET(self):
+            if self.strategy and self.path.startswith(self.strategy.callback_url):
+                self.strategy.handle_auth(self)
             else:
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
                 self.wfile.write(b'Hello, World!')
 
-    def run(strat):
-        global strategy, PORT, KEEP_RUNNING
+    def run(strategy):
+        global PORT, KEEP_RUNNING
 
-        strategy = strat
-        server = http.server.HTTPServer(('127.0.0.1', PORT), WebHandler)
+        handler_class = partial(WebHandler, strategy=strategy)
+        server = http.server.HTTPServer(('127.0.0.1', PORT), handler_class)
 
         while KEEP_RUNNING:
             server.handle_request()
@@ -40,6 +41,6 @@ init python in webserver:
         if KEEP_RUNNING is False:
             KEEP_RUNNING = True
             
-            thread = threading.Thread(target=run, kwargs={"strat": strategy})
+            thread = threading.Thread(target=run, kwargs={"strategy": strategy})
             thread.daemon = True
             thread.start()
